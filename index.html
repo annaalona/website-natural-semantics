@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script defer src="dist/bundle.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-svg.js"></script>
+
+  <title>Natural Semantics</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+
+  <script>
+    MathJax = {
+      options: {
+        renderActions: {
+          assistiveMml: []
+        }
+      }
+    };
+  </script>
+
+  <script>
+    window.MathJax = {
+      options: {
+        renderActions: {
+          assistiveMml: []
+        }
+      },
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        packages: { '[+]': ['unicode'] }
+      },
+      svg: {
+        scale: 1.2
+      },
+      startup: {
+        typeset: false
+      }
+    };
+  </script>
+
+  <style>
+
+    body:not(.loaded) {
+      visibility: hidden;
+    }
+  </style>
+
+</head>
+<body>
+
+<div class="main-title-container">
+  <h1 class="main-title">Prirodzena operačna semantika</h1>
+</div>
+
+<div class="button-group-settings">
+  <div class="theme-container">
+    <label class="switch">
+      <input type="checkbox" id="theme-switcher">
+      <span class="slider"></span>
+    </label>
+  </div>
+  <div class="select-wrapper">
+  <select name="language-picker-select" id="language-picker-select">
+    <option lang="slovak" value="slovak">Slovenčina</option>
+    <option lang="english" value="english" selected >English</option>
+    <option lang="ukrainian" value="ukrainian">Українська</option>
+  </select>
+  </div>
+</div>
+
+<div class="button-group-top">
+  <div class="button-group-left">
+    <div class="button-group-row">
+      <button class="button" id="helpButton">Pomoc</button>
+      <div class="drop-down">
+        <div class="inner-content">
+          <span class="material-icons icon">Vložiť príklad</span>
+        </div>
+        <ul class="drop-down-list">
+          <li id="Example1">Príklad 1</li>
+          <li id="Example2">Príklad 2</li>
+          <li id="Example3">Príklad 3</li>
+        </ul>
+      </div>
+      <button class="button" id="uploadProgramButton">Nahrať program</button>
+      <input type="file" id="fileInput" style="display: none;" />
+      <button class="button active" id="visualizeButton">Vizualizovať</button>
+    </div>
+    <div class="variables-container">
+      <div class="variables-label">Set Variables</div>
+      <div class="button-group-plus-minus">
+        <button class="button" id="plusButton">+</button>
+        <button class="button" id="minusButton">-</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="button-group-right">
+        <div class="button-subgroup">
+          <button class="button" id="exportButton">Export to SVG</button>
+          <button class="button" id="export-latex-button">Export to LaTeX</button>
+
+
+      <div id="latexModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
+  background:#fff; border:1px solid #ccc; padding:20px; z-index:1000; max-width:90%; max-height:80%; overflow:auto;">
+        <h3>LaTeX Export</h3>
+        <pre id="latexContent" style="white-space:pre-wrap; color: black"></pre>
+        <button class="button" id="copy-latex">Copy</button>
+         </div>
+
+      <div id="modalOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.5); z-index:999;" onclick="closeModal()"></div>
+
+    </div>
+  </div>
+
+
+</div>
+<div id="inputsParentContainer">
+  <div id="inputContainer" class="input-container" style="display: none;">
+    <input type="text" id="inpVar" class="input-var" placeholder="Variable name">
+    <input type="text" id="inp" class="input-value" placeholder="Value">
+  </div>
+</div>
+<br>
+
+
+<div id="myModal" class="modal help-modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <div class="modal-header">
+      <h2 class="modal-title">Help - How to Use the Program</h2>
+      <div class="tab-container">
+        <button class="tab-button active" data-tab="basic">Basic Features</button>
+        <button class="tab-button" data-tab="jane">JANE Language</button>
+        <button class="tab-button" data-tab="modes">Program Modes</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="tab-content active" id="basic-content">
+        <h3>Basic Features</h3>
+        <div class="feature-section">
+          <h4>Program Input</h4>
+          <ul>
+            <li><strong>Text Editor:</strong> Write your program in the main editor</li>
+            <li><strong>Examples:</strong> Try predefined programs</li>
+            <li><strong>File Upload:</strong> Load your own files</li>
+          </ul>
+        </div>
+
+        <div class="feature-section">
+          <h4>Variables</h4>
+          <ul>
+            <li><strong>Add:</strong> Click "+" for new variable</li>
+            <li><strong>Remove:</strong> Click "-" to delete</li>
+            <li><strong>Set:</strong> Enter name and value</li>
+          </ul>
+        </div>
+
+        <div class="feature-section">
+          <h4>Visualization</h4>
+          <ul>
+            <li><strong>Full View:</strong> Complete execution tree</li>
+            <li><strong>Step Mode:</strong> Navigate states</li>
+            <li><strong>Export:</strong> Save as SVG/LaTeX</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tab-content" id="jane-content">
+        <h3>JANE Language</h3>
+        <div class="feature-section">
+          <h4>Syntax</h4>
+          <ul>
+            <li><strong>Variables:</strong> x, y, z</li>
+            <li><strong>Math:</strong> +, -, *, /, :=</li>
+            <li><strong>Logic:</strong> if, then, else</li>
+            <li><strong>Loops:</strong> while, do</li>
+          </ul>
+        </div>
+
+        <div class="feature-section">
+          <h4>Examples</h4>
+          <pre><code>// Simple assignment
+x := 5
+
+// Conditional
+if (x > 0) {
+  y := 1} else {
+  y := 0}
+
+// Loop
+while (x > 0) {
+  x := x - 1}</code></pre>
+        </div>
+
+        <div class="feature-section">
+          <h4>Common Mistakes</h4>
+          <ul>
+            <li>Missing semicolons</li>
+            <li>Wrong variable names</li>
+            <li>Uninitialized vars</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="tab-content" id="modes-content">
+        <h3>Program Modes</h3>
+        <div class="feature-section">
+          <h4>Execution</h4>
+          <ul>
+            <li><strong>Full Mode</strong>
+              <ul>
+                <li>Complete tree view</li>
+                <li>All states at once</li>
+                <li>Full program flow</li>
+              </ul>
+            </li>
+            <li><strong>Step Mode</strong>
+              <ul>
+                <li>Interactive navigation</li>
+                <li>Forward/Back control</li>
+                <li>State transitions</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+
+        <div class="feature-section">
+          <h4>Learning</h4>
+          <ul>
+            <li><strong>Next State</strong>
+              <ul>
+                <li>Predict next</li>
+                <li>Get feedback</li>
+                <li>Learn rules</li>
+              </ul>
+            </li>
+            <li><strong>All States</strong>
+              <ul>
+                <li>Challenge mode</li>
+                <li>Test knowledge</li>
+                <li>Master flow</li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="text-area-container">
+  <div id="monaco-editor-container">
+    <div id="monaco-editor"></div>
+  </div>
+</div>
+
+<div class="form-box">
+  <div class="button-box">
+    <button type="button" class="toggle-btn active" id="left-click-button">Step by Step</button>
+    <button type="button" class="toggle-btn" id="right-click-button">Whole Tree</button>
+    <div id="button-switch"></div>
+  </div>
+</div>
+
+<div id="interactive-buttons">
+  <button class="button" id="backButton">Back</button>
+  <button class="button" id="forwardButton">Forward</button>
+  <button class="button" id="guessNextState">Guess Next Iteration</button>
+  <button class="button" id="check-button">Check Next Iteration</button>
+  <button class="button" id="guessAllStatesButton">Guess All States</button>
+  <button class="button" id="enterAllStates">Check</button>
+</div>
+
+<div id="guessFinalStates"></div>
+
+<div id="math-keyboard">
+
+
+</div>
+
+<div id="guessing-next-iteration">
+  <div class="text-area-container-second">
+    <div id="monaco-editor-container-single">
+      <div id="monaco-editor-single"></div>
+    </div>
+  </div>
+  <div id="result" style="margin-top: 10px;"></div>
+</div>
+
+
+
+<div class="output-container">
+  <div id="outputResultArea">
+  </div>
+  <div id="interactiveResultArea"></div>
+  <div class="states-panel-container">
+    <div id="statesPanel" class="slide-panel">
+      <h3 class="title" data-i18n="states">States</h3>
+      <div id="statesList">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="mathjax-container"></div>
+
+<div id="states" style="display: none"></div>
+
+<div id="retryModal" class="modal">
+  <div class="modal-content">
+    <h3>Try Again?</h3>
+    <p>Your answer was incorrect. Would you like to try again?</p>
+    <div class="modal-buttons">
+      <button id="retryYes" class="modal-button yes-button">Yes</button>
+      <button id="retryNo" class="modal-button no-button">No</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const themeSwitcher = document.getElementById('theme-switcher');
+  const savedTheme = localStorage.getItem('theme') || 'light';
+
+  if (savedTheme === 'dark') {
+    document.documentElement.classList.add('dark-theme');
+    document.body.classList.add('dark-theme');
+    themeSwitcher.checked = true;
+  }
+
+  themeSwitcher.addEventListener('change', () => {
+    if (themeSwitcher.checked) {
+      document.documentElement.classList.add('dark-theme');
+      document.body.classList.add('dark-theme');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark-theme');
+      document.body.classList.remove('dark-theme');
+      localStorage.setItem('theme', 'light');
+    }
+  });
+
+  window.onload = function() {
+    if (window.MathJax) {
+      MathJax.startup.promise.then(() => {
+        document.body.classList.add('loaded');
+      });
+    }
+  }
+
+</script>
+
+</body>
+</html>
