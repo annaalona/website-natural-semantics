@@ -162,8 +162,8 @@ body.dark-theme .main-title::before {
 
 .button-group-plus-minus {
   display: flex;
-  gap: 5px;
   align-items: center;
+  margin: 0;
 }
 
   .button-group-right {
@@ -229,9 +229,19 @@ body.dark-theme .main-title::before {
 }
 
 .button-group-plus-minus .button {
-  padding: 5px 10px;
-  min-width: 30px;
+  width: 30px;
   height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  max-width: 30px;
+  max-height: 30px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  line-height: 1;
 }
 
   .button-group-right .button:last-child {
@@ -943,9 +953,11 @@ body.dark-theme .state-item {
 .variables-container {
   font-family: 'Fira Code', monospace;
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  width: 110px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 230px;
   padding: 5px;
   background: #f9f9f9;
   border: 1px solid #4CAF50;
@@ -958,8 +970,9 @@ body.dark-theme .state-item {
   font-family: 'Fira Code', monospace;
   font-size: 12px;
   color: #333;
-  text-align: center;
-  margin-bottom: 2px;
+  text-align: left;
+  margin: 0;
+  white-space: nowrap;
 }
 
 .text-editor-label {
@@ -1025,14 +1038,6 @@ body.dark-theme .text-editor-label {
     font-size: 12px;
     min-height: 44px;
     white-space: normal;
-  }
-
-  .button-group-plus-minus {
-    width: 100%;
-  }
-
-  .button-group-plus-minus .button {
-    flex: 1;
   }
 
   .drop-down {
@@ -1322,6 +1327,18 @@ body.dark-theme .text-editor-label {
   #export-latex-button {
     margin-bottom: 8px;
   }
+
+  .button-group-plus-minus .button {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    max-width: 30px;
+    max-height: 30px;
+    border-radius: 50%;
+    padding: 0;
+    font-size: 2rem;
+  }
 }
 
 
@@ -1511,13 +1528,17 @@ body.dark-theme .help-modal .feature-section .description {
 }
 
 .help-modal .close {
-  color: #4CAF50;
+  color: #4CAF50 !important;
   float: right;
   font-size: 28px;
   font-weight: bold;
   cursor: pointer;
   line-height: 1;
   padding: 0 8px;
+  position: absolute;
+  right: 20px;
+  top: 10px;
+  z-index: 1001;
 }
 
 .help-modal .close:hover,
@@ -1642,7 +1663,8 @@ body.dark-theme .help-modal strong {
 
 html.dark-theme .help-modal .close,
 body.dark-theme .help-modal .close {
-  color: #9370DB;
+  color: #9370DB !important;
+  background: transparent !important;
 }
 
 html.dark-theme .help-modal .close:hover,
@@ -1859,6 +1881,19 @@ body.dark-theme .slide-panel h3 {
   border: 1px solid #e0e0e0;
 }
 
+#latexPreamble{
+  background: #f8f9fa ;
+  padding: 16px;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  white-space: pre-wrap ;
+  color: #2c3e50 ;
+  border: 1px solid #e0e0e0 ;
+}
+
 #copy-latex {
   display: flex;
   align-items: center;
@@ -1928,7 +1963,9 @@ body.dark-theme #latexModal h3 {
 }
 
 html.dark-theme #latexContent,
-body.dark-theme #latexContent {
+body.dark-theme #latexContent,
+html.dark-theme #latexPreamble,
+body.dark-theme #latexPreamble {
   background: #2a2a3c !important;
   color: #ffffff !important;
   border: 1px solid #333333 !important;
@@ -2497,4 +2534,34 @@ body.dark-theme .modal-button {
 
 #guessNextState {
   margin-right: 5px;
+}
+
+.retry-inline-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px;
+  border: none;
+  border-radius: 50%;
+  background-color: #4CAF50;
+  background-image: url('../src/images/restart_white.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 60%;
+  width: 32px;
+  height: 32px;
+  position: absolute;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.retry-inline-btn:hover {
+  transform: rotate(180deg);
+}
+
+.dark-theme .retry-inline-btn {
+  background-color: #7B68EE;
+  background-image: url('../src/images/restart_black.png');
 }

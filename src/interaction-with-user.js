@@ -1,6 +1,5 @@
 import {model, stackOfStates} from "./index";
 import {editor} from "./index";
-import {makeGuessOfFinalStates} from "./generate-latex";
 import {arrayOfIterationsInTree} from "./index";
 import {currentIndex} from "./interactive-mode";
 import {translations} from "./language-switcher";
@@ -12,9 +11,7 @@ const uploadButton = document.getElementById('uploadProgramButton');
 const fileInput = document.getElementById('fileInput');
 
 let uniqueIdInputField = 1;
-
 let currentInputs = [];
-
 
 function setupPasteExampleTool() {
   const Example1 = document.getElementById("Example1");
@@ -96,7 +93,6 @@ export function setupHelpMenuAndPasteExampleFeature() {
   const tabButtons = document.querySelectorAll('.tab-button');
   const tabContents = document.querySelectorAll('.tab-content');
 
-
   tabButtons.forEach(button => {
     button.addEventListener('click', () => {
 
@@ -116,7 +112,6 @@ export function setupHelpMenuAndPasteExampleFeature() {
   });
 
   btn.onclick = function () {
-
     modal.style.display = "block";
   }
 
@@ -124,11 +119,11 @@ export function setupHelpMenuAndPasteExampleFeature() {
     modal.style.display = "none";
   }
 
-window.onclick = function (event) {
-  if (event.target === modal) {
-    modal.style.display = "none";
+  window.onclick = function (event) {
+    if (event.target === modal) {
+      modal.style.display = "none";
+      }
     }
-  }
 
   setupPasteExampleTool();
 }
@@ -186,61 +181,19 @@ export function setupEnterGuessOfFinalStates() {
     if (allCorrect) {
     compareFinalStates();
     } else {
-      const retryModal = document.getElementById('retryModal');
-
-      if (retryModal) {
-        retryModal.style.display = 'block';
-
-        const retryYes = document.getElementById('retryYes');
-        if (retryYes) {
-          retryYes.onclick = function() {
-            retryModal.style.display = 'none';
-            currentInputs.forEach(input => {
-              input.style.borderColor = '';
-              if (input.id.startsWith('varValue')) {
-                input.value = '';
-              }
-            });
-          };
-        }
-
-        const retryNo = document.getElementById('retryNo');
-        if (retryNo) {
-          retryNo.onclick = function() {
-            retryModal.style.display = 'none';
-            hideInteractiveElements();
-            const backButton = document.getElementById('backButton');
-            const forwardButton = document.getElementById('forwardButton');
-            backButton.disabled = false;
-            backButton.style.opacity = '1';
-            forwardButton.disabled = false;
-            forwardButton.style.opacity = '1';
-
-            const guessNextState = document.getElementById('guessNextState');
-            if (guessNextState) {
-              guessNextState.disabled = false;
-              guessNextState.style.opacity = '1';
-            }
-          };
-        }
-
-        const modalContent = retryModal.querySelector('.modal-content');
-        if (modalContent) {
-          retryModal.onclick = function(event) {
-            if (event.target === retryModal) {
-              retryModal.style.display = 'none';
-              hideInteractiveElements();
-              const backButton = document.getElementById('backButton');
-              const forwardButton = document.getElementById('forwardButton');
-              backButton.disabled = false;
-              backButton.style.opacity = '1';
-              forwardButton.disabled = false;
-              forwardButton.style.opacity = '1';
-            }
-          };
-        }
-      } else {
-        console.error("Retry modal element not found in DOM");
+      // Inline error message with retry button
+      const t = getCurrentTranslations();
+      const resultElement = document.getElementById("result");
+      if (resultElement) {
+        resultElement.innerHTML = `❌ ${t.incorrectAnswer || 'Неправильно. Спробуйте ще раз!'} ` +
+          `<button id='retryInlineBtn' class='retry-inline-btn'></button>`;
+        resultElement.style.color = "red";
+        document.getElementById('retryInlineBtn').onclick = function() {
+          currentInputs.forEach(input => {
+            input.style.borderColor = '';
+          });
+          resultElement.innerText = '';
+        };
       }
     }
   });
@@ -248,9 +201,7 @@ export function setupEnterGuessOfFinalStates() {
 
 export function setupGuessOfFinalStates() {
   document.getElementById("guessAllStatesButton").addEventListener('click', function () {
-
     const currentIteration = arrayOfIterationsInTree[currentIndex-1];
-
     if (!currentIteration) {
       return;
     }
@@ -266,13 +217,13 @@ export function setupGuessOfFinalStates() {
     }
 
     const stateToGuess = analyzeStateForGuessing(currentIteration);
-
     if (!stateToGuess) {
       return;
     }
 
     const stateNumberMatch = stateToGuess.match(/s_(\d+)/);
     if (!stateNumberMatch) return;
+
     const stateNumber = stateNumberMatch[1];
     const state = stackOfStates[stateNumber];
     if (!state) {
@@ -280,11 +231,6 @@ export function setupGuessOfFinalStates() {
     }
 
     const guessFinalStates = document.getElementById('guessFinalStates');
-    if (!guessFinalStates) {
-      console.error("guessFinalStates element not found!");
-      return;
-    }
-
     guessFinalStates.innerHTML = '';
 
     const inputDiv = document.createElement('div');
@@ -327,24 +273,20 @@ export function setupGuessOfFinalStates() {
   });
 }
 
- function compareFinalStates() {
-
+function compareFinalStates() {
   const currentIteration = arrayOfIterationsInTree[currentIndex-1];
-
   if (!currentIteration) {
     return;
   }
-
   const stateToGuess = analyzeStateForGuessing(currentIteration);
-
   if (!stateToGuess) {
     return;
   }
-
   const stateNumberMatch = stateToGuess.match(/s_(\d+)/);
   if (!stateNumberMatch) {
     return;
   }
+
   const stateNumber = stateNumberMatch[1];
 
   const state = stackOfStates[stateNumber];
@@ -486,7 +428,6 @@ function analyzeStateForGuessing(iteration) {
     }
   }
 
-
   const allStates = cleanIteration.match(/s_(\d+)/g);
   if (allStates && allStates.length > 0) {
     return allStates[allStates.length - 1];
@@ -495,63 +436,52 @@ function analyzeStateForGuessing(iteration) {
   return null;
 }
 
-function checkInput() {
-  if (!editorSecond || currentIndex >= arrayOfIterationsInTree.length) return;
-
-  const currentIteration = arrayOfIterationsInTree[currentIndex-1];
-
-  const stateToGuess = analyzeStateForGuessing(currentIteration);
-  if (!stateToGuess) return;
-
-  const symbolMap = {
-    "→": "\\rightarrow",
-    "⟨": "\\langle",
-    "⟩": "\\rangle",
-    "B": "\\mathscr{B}",
-    "⟦": "[[",
-    "⟧": "]]",
-    "s_?": "s_?"
-  };
-
-  function convertToLatex(input) {
-    return input.replace(/\s+/g, '').replace(/→|⟨|⟩|⟦\?\⟧|tt|ff|s_\?|B/g, match => symbolMap[match] || match);
-  }
-
-  let userInput = convertToLatex(editorSecond.getValue());
-  const resultElement = document.getElementById("result");
-
-  const stateNumber = stateToGuess.match(/s_(\d+)/);
-  const stateMap = stackOfStates[stateNumber];
-
-  let expectedState = '';
-  if (stateMap) {
-    expectedState = Array.from(stateMap.entries())
-      .map(([key, value]) => `${key}=${value}`)
-      .join(',');
-  }
-
-
-  if (userInput === expectedState) {
-    resultElement.innerText = "✅ Correct! State matched: " + userInput;
-    resultElement.style.color = "green";
-    currentIndex++;
-    document.getElementById('forwardButton').click();
-  } else {
-    resultElement.innerText = "❌ Incorrect. Try again!";
-    resultElement.style.color = "red";
-  }
-}
-
 export function setupPlusMinusInputButtons() {
-  document.getElementById("plusButton").addEventListener("click", function () {
+  const plusButton = document.getElementById("plusButton");
+  if (!plusButton) return;
+
+  plusButton.addEventListener("click", function () {
     let parentContainer = document.getElementById("inputsParentContainer");
     let originalContainer = document.getElementById("inputContainer");
 
+    if (!parentContainer || !originalContainer) {
+      if (!parentContainer) {
+        parentContainer = document.createElement("div");
+        parentContainer.id = "inputsParentContainer";
+        document.body.appendChild(parentContainer);
+      }
+
+      if (!originalContainer) {
+        originalContainer = document.createElement("div");
+        originalContainer.id = "inputContainer";
+        originalContainer.className = "input-container";
+        originalContainer.style.display = "none";
+
+        const varInput = document.createElement("input");
+        varInput.type = "text";
+        varInput.id = "inpVar";
+        varInput.className = "input-var";
+        varInput.placeholder = translations[localStorage.getItem("selectedLanguage") || "english"].variableNamePlaceholder;
+
+        const valueInput = document.createElement("input");
+        valueInput.type = "text";
+        valueInput.id = "inp";
+        valueInput.className = "input-value";
+        valueInput.placeholder = translations[localStorage.getItem("selectedLanguage") || "english"].valuePlaceholder;
+
+        originalContainer.appendChild(varInput);
+        originalContainer.appendChild(valueInput);
+        parentContainer.appendChild(originalContainer);
+      }
+    }
+
     if (originalContainer.style.display === "none") {
       originalContainer.style.display = "flex";
+      if (!originalContainer.querySelector('.delete-input-button')) {
+        addDeleteButton(originalContainer);
+      }
     } else {
       let newContainer = originalContainer.cloneNode(true);
-
       newContainer.classList.add("input-container");
       newContainer.id = "inputContainer-" + uniqueIdInputField++;
 
@@ -561,22 +491,119 @@ export function setupPlusMinusInputButtons() {
         inputs[i].id = inputs[i].id + "-" + uniqueIdInputField;
       }
 
+      const existingDeleteButton = newContainer.querySelector('.delete-input-button');
+      if (existingDeleteButton) {
+        existingDeleteButton.remove();
+      }
+
       newContainer.style.display = "flex";
+      addDeleteButton(newContainer);
       parentContainer.appendChild(newContainer);
       uniqueIdInputField++;
     }
   });
 }
 
-document.getElementById("minusButton").addEventListener("click", function () {
-  let parentContainer = document.getElementById("inputsParentContainer");
-
-  if (parentContainer.children.length > 1) {
-    parentContainer.removeChild(parentContainer.lastChild);
-  } else {
-    parentContainer.firstChild.display = "none";
+function addDeleteButton(container) {
+  if (container.querySelector('.delete-input-button')) {
+    return;
   }
-});
+
+  const deleteButton = document.createElement("button");
+  deleteButton.className = "delete-input-button";
+  deleteButton.innerHTML = "-";
+  deleteButton.type = "button";
+  deleteButton.setAttribute("aria-label", "Delete input");
+
+  function updateButtonTheme() {
+    const isDarkTheme = document.body.classList.contains("dark-theme");
+    if (isDarkTheme) {
+      deleteButton.style.backgroundColor = "#9370DB";
+      deleteButton.addEventListener("mouseover", function() {
+        this.style.backgroundColor = "#8A2BE2";
+      });
+      deleteButton.addEventListener("mouseout", function() {
+        this.style.backgroundColor = "#9370DB";
+      });
+    } else {
+      deleteButton.style.backgroundColor = "#4CAF50";
+      deleteButton.addEventListener("mouseover", function() {
+        this.style.backgroundColor = "#45a049";
+      });
+      deleteButton.addEventListener("mouseout", function() {
+        this.style.backgroundColor = "#4CAF50";
+      });
+    }
+  }
+
+  // Apply all styles directly
+  Object.assign(deleteButton.style, {
+    width: "20px",
+    height: "20px",
+    padding: "0",
+    lineHeight: "1",
+    fontSize: "16px",
+    fontWeight: "bold",
+    color: "white",
+    border: "none",
+    borderRadius: "50%",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "all 0.3s ease",
+    minWidth: "20px",
+    minHeight: "20px"
+  });
+
+  // Initial theme setup
+  updateButtonTheme();
+
+  // Listen for theme changes
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.attributeName === 'class') {
+        updateButtonTheme();
+      }
+    });
+  });
+
+  observer.observe(document.body, {
+    attributes: true,
+    attributeFilter: ['class']
+  });
+
+  deleteButton.addEventListener("click", function() {
+    const parentContainer = document.getElementById("inputsParentContainer");
+    container.remove();
+
+    // If this was the last container, create a new hidden one
+    if (parentContainer.children.length === 0) {
+      const newContainer = document.createElement("div");
+      newContainer.id = "inputContainer";
+      newContainer.className = "input-container";
+      newContainer.style.display = "none";
+
+      const varInput = document.createElement("input");
+      varInput.type = "text";
+      varInput.id = "inpVar";
+      varInput.className = "input-var";
+      varInput.placeholder = translations[localStorage.getItem("selectedLanguage") || "english"].variableNamePlaceholder;
+
+      const valueInput = document.createElement("input");
+      valueInput.type = "text";
+      valueInput.id = "inp";
+      valueInput.className = "input-value";
+      valueInput.placeholder = translations[localStorage.getItem("selectedLanguage") || "english"].valuePlaceholder;
+
+      newContainer.appendChild(varInput);
+      newContainer.appendChild(valueInput);
+      parentContainer.appendChild(newContainer);
+    }
+  });
+
+  container.appendChild(deleteButton);
+}
 
 const themeSwitcher = document.getElementById("theme-switcher");
 let currentTheme = localStorage.getItem("theme") || "light";
@@ -633,23 +660,179 @@ function hideInteractiveElements() {
   }
 }
 
-function createInputContainer() {
-  const container = document.createElement('div');
-  container.className = 'input-container';
 
-  const varNameInput = document.createElement('input');
-  varNameInput.type = 'text';
-  varNameInput.className = 'input-var';
-  varNameInput.placeholder = translations[localStorage.getItem("selectedLanguage") || "english"].variableNamePlaceholder;
 
-  const varValueInput = document.createElement('input');
-  varValueInput.type = 'text';
-  varValueInput.className = 'input-value';
-  varValueInput.placeholder = translations[localStorage.getItem("selectedLanguage") || "english"].valuePlaceholder;
+const guessAllStatesButton = document.getElementById('guessAllStatesButton');
+if (guessAllStatesButton) {
+  let cancelGuessAllStatesButton = document.getElementById('cancelGuessAllStatesButton');
+  if (!cancelGuessAllStatesButton) {
+    cancelGuessAllStatesButton = document.createElement('button');
+    cancelGuessAllStatesButton.id = 'cancelGuessAllStatesButton';
+    cancelGuessAllStatesButton.className = 'button cancel-button';
+    cancelGuessAllStatesButton.textContent = getCurrentTranslations().cancelButton;
+    cancelGuessAllStatesButton.style.marginLeft = '15px';
+    cancelGuessAllStatesButton.style.display = 'none';
+    guessAllStatesButton.parentNode.appendChild(cancelGuessAllStatesButton);
+  }
+  cancelGuessAllStatesButton.onclick = function() {
+    const guessFinalStates = document.getElementById('guessFinalStates');
+    const enterAllStatesButton = document.getElementById('enterAllStates');
+    guessFinalStates.innerHTML = '';
+    guessFinalStates.style.display = 'none';
+    if (enterAllStatesButton) enterAllStatesButton.style.display = 'none';
+    cancelGuessAllStatesButton.style.display = 'none';
+    const resultElement = document.getElementById('result');
+    if (resultElement) {
+      resultElement.innerHTML = '';
+    }
+    const guessNextState = document.getElementById('guessNextState');
+    if (guessNextState) {
+      guessNextState.disabled = false;
+      guessNextState.style.opacity = '1';
+    }
+    guessAllStatesButton.disabled = false;
+    guessAllStatesButton.style.opacity = '1';
+    const backButton = document.getElementById('backButton');
+    const forwardButton = document.getElementById('forwardButton');
+    if (backButton) {
+      backButton.disabled = false;
+      backButton.style.opacity = '1';
+    }
+    if (forwardButton) {
+      forwardButton.disabled = false;
+      forwardButton.style.opacity = '1';
+    }
+  };
+}
 
-  container.appendChild(varNameInput);
-  container.appendChild(varValueInput);
+if (guessAllStatesButton) {
+  guessAllStatesButton.addEventListener('click', function() {
+    const cancelGuessAllStatesButton = document.getElementById('cancelGuessAllStatesButton');
+    if (cancelGuessAllStatesButton) cancelGuessAllStatesButton.style.display = 'inline-flex';
+  });
+}
 
-  return container;
+const leftButton = document.getElementById('left-click-button');
+const rightButton = document.getElementById('right-click-button');
+
+if (leftButton) {
+  leftButton.addEventListener('click', function() {
+    setupCancelButton();
+  });
+}
+
+if (rightButton) {
+  rightButton.addEventListener('click', function() {
+    setupCancelButton();
+  });
+}
+
+function setupCancelButton() {
+  const cancelGuessButton = document.getElementById('cancelGuessButton');
+  if (cancelGuessButton) cancelGuessButton.style.display = 'none';
+  const cancelGuessAllStatesButton = document.getElementById('cancelGuessAllStatesButton');
+  if (cancelGuessAllStatesButton) cancelGuessAllStatesButton.style.display = 'none';
+  const resultElement = document.getElementById('result');
+  if (resultElement) {
+    resultElement.innerHTML = '';
+  }
+}
+
+export function downloadMathAsSVG() {
+  if (typeof MathJax === 'undefined') {
+    console.error('MathJax is not loaded yet.');
+    return;
+  }
+
+  const element = document.getElementById('outputResultArea');
+  if (!element) {
+    console.error('Element #outputResultArea not found.');
+    return;
+  }
+
+  MathJax.typesetPromise([element])
+    .then(() => {
+      const clone = element.cloneNode(true);
+      const svg = clone.querySelector('svg');
+
+      const assistiveElements = clone.querySelectorAll('.mjx-assistive-mml');
+      assistiveElements.forEach(el => el.remove());
+
+      const lines = svg.querySelectorAll('.mjx-line, line, path, .mjx-path');
+      lines.forEach(line => {
+        line.setAttribute('stroke', '#000000');
+        line.setAttribute('stroke-width', '35');
+        line.setAttribute('stroke-linecap', 'round');
+        line.setAttribute('opacity', '1');
+      });
+
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('width', '100%');
+      rect.setAttribute('height', '100%');
+      rect.setAttribute('fill', 'white');
+      svg.insertBefore(rect, svg.firstChild);
+
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const blob = new Blob([svgData], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.download = 'math-content.svg';
+      link.href = url;
+      link.click();
+      URL.revokeObjectURL(url);
+    })
+    .catch(err => console.error('Error:', err));
+}
+
+export function setupExportLatexModal() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const exportButton = document.getElementById("exportButton");
+    exportButton.disabled = true;
+
+    const checkMathJax = setInterval(() => {
+      if (typeof MathJax !== 'undefined' && MathJax.startup && MathJax.startup.promise) {
+        clearInterval(checkMathJax);
+        exportButton.disabled = false;
+      }
+    }, 100);
+
+    exportButton.onclick = function () {
+      downloadMathAsSVG();
+    };
+
+    const latexModal = document.createElement('div');
+    latexModal.id = 'latexModal';
+    latexModal.className = 'modal latex-modal';
+    latexModal.style.display = 'none';
+    latexModal.style.position = 'fixed';
+    latexModal.style.top = '50%';
+    latexModal.style.left = '50%';
+    latexModal.style.transform = 'translate(-50%, -50%)';
+    latexModal.style.background = '#fff';
+    latexModal.style.border = '1px solid #ccc';
+    latexModal.style.padding = '20px';
+    latexModal.style.zIndex = '1000';
+    latexModal.style.maxWidth = '90%';
+    latexModal.style.maxHeight = '80%';
+    latexModal.style.overflow = 'auto';
+
+    latexModal.innerHTML = `
+    <h3>LaTeX Export</h3>
+    <pre id="latexContent" style="white-space:pre-wrap; color: black"></pre>
+    <button class="button" id="copy-latex">Copy</button>
+  `;
+
+    document.body.appendChild(latexModal);
+    document.getElementById('copy-latex').onclick = copyLatexContent;
+  });
+}
+
+export function copyLatexContent() {
+  const latexContent = document.getElementById('latexContent').innerText;
+  navigator.clipboard.writeText(latexContent).then(() => {
+    alert("LaTeX code copied to clipboard!");
+  }).catch(err => {
+    console.error("Failed to copy text: ", err);
+  });
 }
 

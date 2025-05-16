@@ -1,0 +1,189 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+html, body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
+    padding: 20px;
+  }
+
+  /* Container for the top button groups */
+  .button-group-top {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    margin-top: 20px;
+  }
+
+  /* Left and right button groups */
+  .button-group-left,
+  .button-group-right {
+    display: flex;
+  }
+
+  /* Style for all buttons */
+  .button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    margin-right: 10px;
+    cursor: pointer;
+    background-color: #4CAF50; /* Green background */
+    color: white; /* White text */
+    transition: background-color 0.2s;
+  }
+
+  .button:hover {
+    background-color: #46a049; /* Slightly darker green */
+  }
+
+  /* Remove margin for the last button on the right */
+  .button-group-right .button:last-child {
+    margin-right: 0;
+  }
+
+  /* Text area styles */
+  .code-area, .result-area {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    resize: vertical;
+  }
+
+  .result-area {
+    background-color: #e8e8e8; /* Light grey background */
+  }
+  /* Arrange buttons and text areas side by side */
+  .button-group-top, .button-group-bottom, .text-area-container {
+    display: flex;
+    align-items: center; /* Align items vertically */
+    justify-content: space-between; /* Space between the items */
+    margin-bottom: 10px;
+  }
+
+  /* Adjusting the modal for display */
+  .modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+  }
+
+  .modal-content {
+    background-color: #fefefe;
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+    border-radius: 5px;
+  }
+
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+  }
+
+  .close:hover,
+  .close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  /* Clear floats after the buttons */
+  .button-group-top::after, .button-group-bottom::after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+
+  @media (max-width: 600px) {
+    .button-group-top, .button-group-left, .button-group-right {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .button {
+      margin-bottom: 10px;
+    }
+
+    .button:last-child {
+      margin-right: 0;
+    }
+  }
+
+#outputResultArea{
+  width: 50%;
+  min-height: 100px;
+}
+
+#inputCodeArea{
+  width: 50%;
+  min-height: 100px;
+}
+
+#mathInput {
+  width: 65%;
+  padding: 5px;
+  font-size: 1em;
+  margin-right: 10px;
+}
+
+#inputsParentContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Adds space between the input containers */
+}
+
+#inputContainer {
+  display: flex;
+  gap: 10px; /* Space between the inputs */
+}
+
+#render {
+  padding: 5px 10px;
+  font-size: 1em;
+  cursor: pointer;
+}
+
+/*.text-area-container {*/
+/*  width: 1000px;*/
+/*}*/
+#monaco-editor {
+  /*height: 300px;*/
+  /*border: 2px solid #209434;*/
+  /*width: 756px;*/
+  /*height: 208px;*/
+  /*border: 2px solid #209434; !* Зеленая граница толщиной 2px *!*/
+  /*box-sizing: border-box; !* Учитывает границу в общей ширине/высоте *!*/
+}
+#monaco-editor {
+  /*width: 53%; !* Задаёт ширину на всю ширину родительского контейнера *!*/
+  /*height: 200px; !* Вы можете изменить это значение для нужной высоты *!*/
+  /*border: 1px solid #ccc; !* Дополнительно можно добавить границу для лучшей видимости *!*/
+}
+
+#monaco-editor-container {
+  /*display: flex;*/
+  /*width: 100%;*/
+}
+
+#monaco-editor {
+  /*flex-grow: 1;*/
+  /*border-right: 2px solid #000;*/
+}
+
