@@ -4,58 +4,57 @@ import JaneLexer from '../myAntlr/JaneLexer.js';
 import JaneParser from '../myAntlr/JaneParser.js';
 import JaneVisitor from '../myAntlr/JaneVisitor.js';
 
-import {
-  initializeLanguage,
-  setupLanguagePicker,
-  updateLanguage,
-} from "./language-switcher.js";
-
-import html2canvas from 'html2canvas';
+import {initializeLanguage, setupLanguagePicker,} from "./language-switcher.js";
 
 import {assignmentRule, generateStatesHashMap, ifRule, semicolonRule, whileRule} from "./semantic-rules"
 
 import {
+  editorSecond,
   getEditor,
   getModel,
   initializeMonacoEditor,
+  initializeSingleLineMonacoEditor,
+  insertSymbol,
   resizeMonacoEditor,
-  setupMonacoErrorSyntaxHighlighting,
-  initializeSingleLineMonacoEditor, insertSymbol
-} from "./monaco-editor"
+  setupMonacoErrorSyntaxHighlighting
+} from "./monaco-editor.js";
 
 import {
   displayFinalStates,
+  emptyAxiom,
   ifConditionResultToLatex,
   jsonToLatex,
-  renderLatex,
   whileWithConditionResultToLatex,
-  emptyAxiom,
 } from "./generate-latex"
 
 import {
+  setupEnterGuessOfFinalStates,
   setupFileUploadListeners,
+  setupGuessOfFinalStates,
   setupHelpMenuAndPasteExampleFeature,
   setupPlusMinusInputButtons,
-  setupGuessOfFinalStates,
-  setupEnterGuessOfFinalStates
+  downloadMathAsSVG,
+  setupExportLatexModal
 } from "./interaction-with-user";
 
-import {countSemicolonsJSON, hasOnlyOneAssignment, wrapInStatements} from "./utilities";
+import {countSemicolonsJSON, hasOnlyOneAssignment, hasOnlyOneSkip, wrapInStatements} from "./utilities";
 
-import {setupInteractiveMode, replaceStars, currentIndex, iterationThroughHistoryOfTree} from "./interactive-mode";
+import {currentIndex, replaceStars, setupInteractiveMode} from "./interactive-mode";
+
+import {createKeyboard} from "./ui"
 
 export let stackOfStates = [];
 export let latexCode;
-
 export let iterationThroughStates = 0;
 export let historyOfTree = [];
 export let arrayOfIterationsInTree = [];
-let semicolonIterationsArray = [];
 export let pairsOfStates = [];
+
+let semicolonIterationsArray = [];
 let semicolonIterator = 0;
 let countSemicolons;
 let isOnlyOneAssignment;
-
+let isOnlyOneSkip;
 
 setupFileUploadListeners();
 setupHelpMenuAndPasteExampleFeature();
@@ -66,14 +65,73 @@ initializeMonacoEditor();
 initializeSingleLineMonacoEditor();
 setupMonacoErrorSyntaxHighlighting();
 resizeMonacoEditor();
+setupExportLatexModal();
+createKeyboard();
+
 
 export const editor = getEditor();
 export const model = getModel();
 
+// **********************************************************
+//
+//       RUN PROGRAM (main functionality of application)
+//
+// **********************************************************
+const visualizeButton = document.getElementById("visualizeButton");
+visualizeButton.addEventListener("click", function () {
+  // Clear variables
+  historyOfTree = [];
+  historyOfTree.push(emptyAxiom);
+  iterationThroughStates = 0;
+  stackOfStates = [];
 
+  let inputText = model.getValue();
 
+  if (inputText.trim() !== "") {
+    const result = createJSONStructure(inputText);
 
-// *********** AUTOMATED USAGE OF RULES ***********
+    // Start of the tree
+    latexCode = '\\begin{prooftree}\n';
+
+    // Analyzation of input
+    countSemicolons = countSemicolonsJSON(result)
+    isOnlyOneAssignment = hasOnlyOneAssignment(result)
+    isOnlyOneSkip = hasOnlyOneSkip(result)
+
+    // Create a map of states
+    let startState = generateStatesHashMap();
+    stackOfStates.push(startState);
+
+    // Create a latex tree using recursion
+    createDerivationTree(result);
+
+    if (checkIfStatesValid()) {
+      alert("Variables weren't defined properly. Please check your program.");
+      return;
+    }
+
+    // End of the tree
+    latexCode = latexCode + "\\end{prooftree}";
+
+    // Clear the iterations for future comparing
+    arrayOfIterationsInTree = deleteAllLatexElements(arrayOfIterationsInTree);
+
+    displayFinalStates();
+    setupInteractiveMode();
+
+    const outputDiv = document.getElementById('outputResultArea');
+    const interactiveResultArea = document.getElementById('interactiveResultArea');
+    const mathkeyboard = document.getElementById('math-keyboard');
+
+    // Put output latex into div
+    outputDiv.innerHTML = latexCode;
+    renderOutputLatex(outputDiv, interactiveResultArea, mathkeyboard);
+  } else {
+    alert("Please enter some code to visualize.");
+  }
+});
+
+// *********** AUTOMATED USAGE OF SEMANTIC RULES ***********
 export function createDerivationTree(node) {
   let solvedTree = {valueTree: node, leftTree: null, rightTree: null};
   switch (node.type) {
@@ -99,126 +157,70 @@ export function createDerivationTree(node) {
   return solvedTree;
 }
 
-document.getElementById("exportButton").onclick = function() {
-  downloadMathAsSVG();
+function createJSONStructure(inputText) {
+  let chars = new antlr4.InputStream(inputText);
+  let lexer = new JaneLexer(chars);
+  let tokens = new antlr4.CommonTokenStream(lexer);
+  let parser = new JaneParser(tokens);
+  let tree = parser.program();
+
+  const visitor = new JaneVisitor();
+  return visitor.visit(tree);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  const exportButton = document.getElementById("exportButton");
-  exportButton.disabled = true;
-
-  const checkMathJax = setInterval(() => {
-    if (typeof MathJax !== 'undefined' && MathJax.startup && MathJax.startup.promise) {
-      clearInterval(checkMathJax);
-      exportButton.disabled = false;
+function checkIfStatesValid() {
+  // Check for NaN in stackOfStates
+  return stackOfStates.some(stateMap => {
+    if (!(stateMap instanceof Map)) return false;
+    for (const value of stateMap.values()) {
+      if (Number.isNaN(value)) {
+        return true;
+      }
     }
-  }, 100);
-
-  exportButton.onclick = function() {
-    downloadMathAsSVG();
-  };
-
-  const latexModal = document.createElement('div');
-  latexModal.id = 'latexModal';
-  latexModal.className = 'modal latex-modal';
-  latexModal.style.display = 'none';
-  latexModal.style.position = 'fixed';
-  latexModal.style.top = '50%';
-  latexModal.style.left = '50%';
-  latexModal.style.transform = 'translate(-50%, -50%)';
-  latexModal.style.background = '#fff';
-  latexModal.style.border = '1px solid #ccc';
-  latexModal.style.padding = '20px';
-  latexModal.style.zIndex = '1000';
-  latexModal.style.maxWidth = '90%';
-  latexModal.style.maxHeight = '80%';
-  latexModal.style.overflow = 'auto';
-
-  latexModal.innerHTML = `
-    <h3>LaTeX Export</h3>
-    <pre id="latexContent" style="white-space:pre-wrap; color: black"></pre>
-    <button class="button" id="copy-latex">Copy</button>
-  `;
-
-  document.body.appendChild(latexModal);
-
-
-  document.getElementById('copy-latex').onclick = copyLatexContent;
-});
-
-function copyLatexContent() {
-  const latexContent = document.getElementById('latexContent').innerText;
-  navigator.clipboard.writeText(latexContent).then(() => {
-    alert("LaTeX code copied to clipboard!");
-  }).catch(err => {
-    console.error("Failed to copy text: ", err);
+    return false;
   });
 }
 
-function downloadMathAsSVG() {
-  if (typeof MathJax === 'undefined') {
-    console.error('MathJax is not loaded yet.');
-    return;
+function renderOutputLatex(outputDiv, interactiveResultArea, mathkeyboard) {
+  try {
+    MathJax.typesetPromise([outputDiv, interactiveResultArea, mathkeyboard]).then(() => {
+      const interactiveButtons = document.getElementById('interactive-buttons');
+      interactiveButtons.classList.add('visible');
+
+      const formBox = document.querySelector('.form-box');
+      if (formBox) {
+        formBox.classList.add('visible');
+      }
+
+      const leftButton = document.getElementById('left-click-button');
+      const rightButton = document.getElementById('right-click-button');
+
+      if (leftButton && rightButton) {
+        leftButton.classList.add('active');
+        rightButton.classList.remove('active');
+        updateSwitchPosition('left-click-button');
+
+        if (isDarkTheme()) {
+          leftButton.style.color = 'black';
+          rightButton.style.color = 'white';
+        } else {
+          leftButton.style.color = 'white';
+          rightButton.style.color = 'black';
+        }
+      }
+
+      updateStatesList();
+      if (isOnlyOneAssignment || isOnlyOneSkip) {
+        document.getElementById('right-click-button').click();
+      }
+    });
+  } catch (err) {
+    console.error("MathJax error:", err);
   }
-
-  const element = document.getElementById('outputResultArea');
-  if (!element) {
-    console.error('Element #outputResultArea not found.');
-    return;
-  }
-
-  MathJax.typesetPromise([element])
-    .then(() => {
-      const clone = element.cloneNode(true);
-      const svg = clone.querySelector('svg');
-
-      const assistiveElements = clone.querySelectorAll('.mjx-assistive-mml');
-      assistiveElements.forEach(el => el.remove());
-
-      const lines = svg.querySelectorAll('.mjx-line, line, path, .mjx-path');
-      lines.forEach(line => {
-        line.setAttribute('stroke', '#000000');
-        line.setAttribute('stroke-width', '35');
-        line.setAttribute('stroke-linecap', 'round');
-        line.setAttribute('opacity', '1');
-      });
-
-      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-      rect.setAttribute('width', '100%');
-      rect.setAttribute('height', '100%');
-      rect.setAttribute('fill', 'white');
-      svg.insertBefore(rect, svg.firstChild);
-
-      const svgData = new XMLSerializer().serializeToString(svg);
-      const blob = new Blob([svgData], { type: 'image/svg+xml' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.download = 'math-content.svg';
-      link.href = url;
-      link.click();
-      URL.revokeObjectURL(url);
-    })
-    .catch(err => console.error('Error:', err));
 }
 
-function downloadMathJaxAsSVG() {
-  const svgElement = document.querySelector("svg");
-  if (!svgElement) {
-    console.error("SVG not found!");
-    return;
-  }
-
-  const svgData = new XMLSerializer().serializeToString(svgElement);
-  const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "mathjax_equation.svg";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+document.getElementById("exportButton").onclick = function() {
+  downloadMathAsSVG();
 }
 
 // *********** SEMICOLON ***********
@@ -226,48 +228,38 @@ function downloadMathJaxAsSVG() {
 function createSemicolonStructure(node) {
   const {leftPart, rightPart} = semicolonRule(node);
 
-  let elementOfHistory = emptyAxiom + emptyAxiom + `\\BinaryInfC{$\\langle ${jsonToLatex(node)}, s_0 \\rangle \\rightarrow s_*$}\n`;
-  let indexOfSemicolonInTreeHistory;
-    if (historyOfTree.length !== 0) {
+  let elementOfHistory = emptyAxiom + emptyAxiom + `\\BinaryInfC{$\\langle ${jsonToLatex(node)}, s_0 \\rangle \\rightarrow s_#$}\n`;
+  if (historyOfTree.length !== 0) {
     let previousElementInTreeHistory = historyOfTree[historyOfTree.length - 1];
-
     const lastAxiomCIndex = previousElementInTreeHistory.lastIndexOf('\\AxiomC{}');
 
     if (lastAxiomCIndex !== -1) {
       previousElementInTreeHistory = previousElementInTreeHistory.substring(0, lastAxiomCIndex) +
-        `\\AxiomC{}\\AxiomC{}\\BinaryInfC{$\\langle ${jsonToLatex(node)}, s_* \\rangle \\rightarrow s_*$}\n` +
+        `\\AxiomC{}\\AxiomC{}\\BinaryInfC{$\\langle ${jsonToLatex(node)}, s_# \\rangle \\rightarrow s_#$}\n` +
         previousElementInTreeHistory.substring(lastAxiomCIndex + '\\AxiomC{}'.length);
       historyOfTree.push(previousElementInTreeHistory);
-
-      indexOfSemicolonInTreeHistory = historyOfTree.length - 1;
     }
   } else {
     historyOfTree.push(elementOfHistory);
   }
 
-  let singleSemicolonIteration = `\\langle ${jsonToLatex(node)}, s_* \\rangle \\rightarrow s_*`;
+  let singleSemicolonIteration = `\\langle ${jsonToLatex(node)}, s_# \\rangle \\rightarrow s_#`;
   arrayOfIterationsInTree.push(replaceStars(singleSemicolonIteration, pairsOfStates));
 
   let indexOfThisElement = arrayOfIterationsInTree.length - 1;
 
-
-  let leftPartIteration = createDerivationTree(leftPart);
-
+  // Semicolon structure
+  createDerivationTree(leftPart);
   semicolonIterationsArray.push(iterationThroughStates);
-
-
-  let rightPartIteration = createDerivationTree(rightPart);
-
+  createDerivationTree(rightPart);
 
   let amountOfElements = semicolonIterationsArray.length;
-
 
   pairsOfStates.push(countSemicolons === 1 ? 0 :
     (semicolonIterationsArray.at(amountOfElements - semicolonIterator - 2)));
   pairsOfStates.push(stackOfStates.indexOf(stackOfStates[stackOfStates.length - 1]));
 
   arrayOfIterationsInTree[indexOfThisElement] = replaceStars(arrayOfIterationsInTree[indexOfThisElement], pairsOfStates);
-
 
   latexCode += `\\BinaryInfC{$\\langle ${jsonToLatex(node)}, s_${countSemicolons === 1 ? 0 :
     (semicolonIterationsArray.at(amountOfElements - semicolonIterator - 2))}
@@ -277,30 +269,29 @@ function createSemicolonStructure(node) {
   countSemicolons--;
 }
 
-function replaceFirstStarWithNumber(str, number) {
-  return str.replace(/s_\*/, `s_${number}`);
-}
-
 // *********** WHILE ***********
 
 function createWhileStructure(node) {
+  const startIterationForWhile = iterationThroughStates;
   const conditionsArray = whileRule(node);
 
   const conditionLatexSecond = jsonToLatex(node.condition);
   const boolResult = conditionsArray[conditionsArray.length - 1] ? "\\textbf{tt}" : "\\textbf{ff}";
 
-  iterationThroughStates++;
+  if(node.body[0].body[0].type === 'assignment') {
+    iterationThroughStates++;
+  }
 
   let latexCodeWhile = [];
-  latexCodeWhile.push((node.body[0].body[0].type === 'if'
+
+  latexCodeWhile.push(((node.body[0].body[0].type === 'if' || node.body[0].body[0].type === 'semicolon')
       ? `\\AxiomC{$ \\mathscr{B} [ ${conditionLatexSecond} ] s_${iterationThroughStates} = ${boolResult}$}\n`
       : `\\AxiomC{$\\langle ${jsonToLatex(node.body[0])}, s_${stackOfStates.indexOf(stackOfStates[iterationThroughStates]) - 1} \\rangle \\rightarrow s_${stackOfStates.indexOf(stackOfStates[iterationThroughStates])}$}\n`),
-    `\\BinaryInfC{$\\langle ${jsonToLatex(node)}, s_${iterationThroughStates === 0 ? iterationThroughStates : iterationThroughStates - 1} \\rangle \\rightarrow s_${conditionsArray.length - 2 + iterationThroughStates}$}\n`
+      `\\BinaryInfC{$\\langle ${jsonToLatex(node)}, s_${iterationThroughStates === 0 ? iterationThroughStates : startIterationForWhile} \\rangle \\rightarrow s_${/*conditionsArray.length - 2 +*/ iterationThroughStates}$}\n`
   );
 
   if (historyOfTree.length !== 0) {
     let previousElementInTreeHistory = historyOfTree[historyOfTree.length - 1];
-
     const lastAxiomCIndex = previousElementInTreeHistory.indexOf('\\AxiomC{}');
 
     if (lastAxiomCIndex !== -1) {
@@ -308,6 +299,7 @@ function createWhileStructure(node) {
         `\\AxiomC{}\\AxiomC{}\\BinaryInfC{$\\langle ${jsonToLatex(node)}, s_${iterationThroughStates === 0 ? iterationThroughStates : iterationThroughStates - 1}
       \\rangle \\rightarrow s_${conditionsArray.length - 2 + iterationThroughStates}$}\n` +
         previousElementInTreeHistory.substring(lastAxiomCIndex + '\\AxiomC{}'.length);
+
       historyOfTree.push(previousElementInTreeHistory);
 
       let singleWhileIteration = `\\langle ${jsonToLatex(node)}, s_${iterationThroughStates === 0 ? iterationThroughStates : iterationThroughStates - 1} \\rangle \\rightarrow s_${conditionsArray.length - 2 + iterationThroughStates}`;
@@ -317,15 +309,16 @@ function createWhileStructure(node) {
 
   for (let i = 1; i < conditionsArray.length; i++) {
     if (conditionsArray[i] === true) {
-      iterationThroughStates++;
+      if(node.body[0].body[0].type !== 'if' && node.body[0].body[0].type !== 'semicolon') {
+        iterationThroughStates++;
+      }
       const lastBinaryIndex = latexCodeWhile.findIndex(line => line.startsWith("\\BinaryInfC"));
 
-      latexCodeWhile.splice(lastBinaryIndex, 0, node.body[0].body[0].type === 'if' ? '' : `\\AxiomC{$\\langle ${jsonToLatex(node.body[0])}, s_${stackOfStates.indexOf(stackOfStates[iterationThroughStates]) - 1} \\rangle \\rightarrow s_${stackOfStates.indexOf(stackOfStates[iterationThroughStates])}$}\n`,
+      latexCodeWhile.splice(lastBinaryIndex, 0, (node.body[0].body[0].type === 'if' || node.body[0].body[0].type === 'semicolon') ? '' : `\\AxiomC{$\\langle ${jsonToLatex(node.body[0])}, s_${stackOfStates.indexOf(stackOfStates[iterationThroughStates]) - 1} \\rangle \\rightarrow s_${stackOfStates.indexOf(stackOfStates[iterationThroughStates])}$}\n`,
         `\\BinaryInfC{$\\langle ${whileWithConditionResultToLatex(node, conditionsArray[i], iterationThroughStates, false)}$}\n`);
 
       if (historyOfTree.length !== 0) {
         let previousElementInTreeHistory = historyOfTree[historyOfTree.length - 1];
-
         const lastAxiomCIndex = previousElementInTreeHistory.indexOf('\\AxiomC{}');
 
         if (lastAxiomCIndex !== -1) {
@@ -334,7 +327,6 @@ function createWhileStructure(node) {
             previousElementInTreeHistory.substring(lastAxiomCIndex + '\\AxiomC{}'.length);
           historyOfTree.push(previousElementInTreeHistory);
 
-
           let singleWhileIteration = `\\langle ${jsonToLatex(node.body[0])}, s_${stackOfStates.indexOf(stackOfStates[iterationThroughStates]) - 2} \\rangle \\rightarrow s_${stackOfStates.indexOf(stackOfStates[iterationThroughStates]) - 1}`;
           arrayOfIterationsInTree.push(singleWhileIteration);
         }
@@ -342,8 +334,6 @@ function createWhileStructure(node) {
 
       if (historyOfTree.length !== 0) {
         let previousElementInTreeHistory = historyOfTree[historyOfTree.length - 1];
-
-
         const lastAxiomCIndex = previousElementInTreeHistory.indexOf('\\AxiomC{}');
 
         if (lastAxiomCIndex !== -1) {
@@ -356,12 +346,9 @@ function createWhileStructure(node) {
           arrayOfIterationsInTree.push(singleWhileIteration);
         }
       }
-
       if(conditionsArray[i + 1] === false) {
         if (historyOfTree.length !== 0) {
           let previousElementInTreeHistory = historyOfTree[historyOfTree.length - 1];
-
-
           const lastAxiomCIndex = previousElementInTreeHistory.indexOf('\\AxiomC{}');
 
           if (lastAxiomCIndex !== -1) {
@@ -375,47 +362,49 @@ function createWhileStructure(node) {
           }
         }
       }
-
       if(conditionsArray[i + 1] === false) {
         if (historyOfTree.length !== 0) {
           let previousElementInTreeHistory = historyOfTree[historyOfTree.length - 1];
-
           const lastAxiomCIndex = previousElementInTreeHistory.indexOf('\\AxiomC{}');
 
           if (lastAxiomCIndex !== -1) {
             previousElementInTreeHistory = previousElementInTreeHistory.substring(0, lastAxiomCIndex) +
-              `\\AxiomC{$ ${whileWithConditionResultToLatex(node, conditionsArray[i + 1], iterationThroughStates, false)} $}\n \\UnaryInfC{$\\langle ${whileWithConditionResultToLatex(node, conditionsArray[i], iterationThroughStates, true)}$}\n` +
+              `\\AxiomC{}\n \\UnaryInfC{$\\langle ${whileWithConditionResultToLatex(node, conditionsArray[i], iterationThroughStates, true)}$}\n` +
               previousElementInTreeHistory.substring(lastAxiomCIndex + '\\AxiomC{}'.length);
+
             historyOfTree.push(previousElementInTreeHistory);
 
+            let lastTree = historyOfTree[historyOfTree.length - 1];
+            const emptyAxiomIndex = lastTree.indexOf('\\AxiomC{}');
 
+            if (emptyAxiomIndex !== -1) {
+              const filledTree =
+                lastTree.substring(0, emptyAxiomIndex) +
+                `\\AxiomC{$ ${whileWithConditionResultToLatex(node, conditionsArray[i + 1], iterationThroughStates, false)} $}` +
+                lastTree.substring(emptyAxiomIndex + '\\AxiomC{}'.length);
+
+              historyOfTree.push(filledTree);
+            }
             let singleWhileIterationSecond = `\\langle ${whileWithConditionResultToLatex(node, conditionsArray[i], iterationThroughStates, true)}`;
             arrayOfIterationsInTree.push(singleWhileIterationSecond);
 
-            let singleWhileIterationFirst = `\\langle ${whileWithConditionResultToLatex(node, conditionsArray[i + 1], iterationThroughStates, false)}`;
+            let singleWhileIterationFirst = `${whileWithConditionResultToLatex(node, conditionsArray[i + 1], iterationThroughStates, false)}`;
             arrayOfIterationsInTree.push(singleWhileIterationFirst);
 
           }
         }
-
       }
-
     } else {
       const lastBinaryIndex = latexCodeWhile.findIndex(line => line.startsWith("\\BinaryInfC"));
 
       if (lastBinaryIndex !== -1) {
-        latexCodeWhile.splice(lastBinaryIndex, 0, node.body[0].body[0].type === 'if' ? '' : `\\AxiomC{$ ${whileWithConditionResultToLatex(node, conditionsArray[i], iterationThroughStates, false)} $}\n`,
+        latexCodeWhile.splice(lastBinaryIndex, 0, ((node.body[0].body[0].type === 'if' || node.body[0].body[0].type === 'semicolon') ? '' : `\\AxiomC{$ ${whileWithConditionResultToLatex(node, conditionsArray[i], iterationThroughStates, false)} $}\n`),
           `\\UnaryInfC{$\\langle ${whileWithConditionResultToLatex(node, conditionsArray[i - 1], iterationThroughStates, true)}$}\n`);
-
       }
-
     }
   }
   latexCode += latexCodeWhile.join("");
 }
-
-
-let btn = document.getElementById('button-switch');
 
 function isDarkTheme() {
   return document.documentElement.classList.contains('dark-theme');
@@ -431,7 +420,6 @@ function updateSwitchPosition(activeButtonId) {
   switchElement.style.width = `${buttonWidth}px`;
   switchElement.style.left = `${buttonLeft}px`;
 }
-
 
 function leftClick() {
   updateSwitchPosition('left-click-button');
@@ -451,7 +439,6 @@ function leftClick() {
   document.getElementById('math-keyboard').style.display = 'none';
   document.getElementById('enterAllStates').style.display = 'none';
 
-
   const guessNextState = document.getElementById('guessNextState');
   const guessAllStatesButton = document.getElementById('guessAllStatesButton');
 
@@ -465,7 +452,6 @@ function leftClick() {
     guessAllStatesButton.disabled = true;
     guessAllStatesButton.style.opacity = '0.5';
   }
-
 
   const backButton = document.getElementById('backButton');
   const forwardButton = document.getElementById('forwardButton');
@@ -512,7 +498,7 @@ function rightClick() {
 document.getElementById('right-click-button').addEventListener('click', rightClick);
 document.getElementById('left-click-button').addEventListener('click', leftClick);
 
-function updateGuessAllStatesButton() {
+export function updateGuessAllStatesButton() {
   const guessAllStatesButton = document.getElementById('guessAllStatesButton');
   if (guessAllStatesButton) {
     if (currentIndex < 2) {
@@ -546,24 +532,20 @@ document.getElementById('right-click-button').addEventListener('click', function
     checkButton.style.display = 'none';
     checkButton.classList.remove('visible');
   }
-
   updateGuessAllStatesButton();
 });
 
 
 document.getElementById('left-click-button').addEventListener('click', function() {
-
   const guessFinalStates = document.getElementById('guessFinalStates');
   if (guessFinalStates && guessFinalStates.classList.contains('visible')) {
     guessFinalStates.style.display = 'block';
   }
-
   updateGuessAllStatesButton();
 });
 
 
 document.getElementById('forwardButton').addEventListener('click', function() {
-
   setTimeout(updateGuessAllStatesButton, 0);
 });
 
@@ -580,16 +562,11 @@ function createAssignmentStructure(node) {
         \\rangle \\rightarrow s_${iterationThroughStates + 1}$}\n`
 
     latexCode += assignmentStructure;
-
     if (historyOfTree.length !== 0) {
-
       let previousElementInTreeHistory = historyOfTree[historyOfTree.length - 1];
-
       let elementOfHistory = previousElementInTreeHistory.replace('\\AxiomC{}', assignmentStructure);
-
       historyOfTree.push(elementOfHistory);
     }
-
   } else {
     latexCode += `\\AxiomC{}\n`;
     latexCode += `\\UnaryInfC{$\\langle ${jsonToLatex(node)}, s_${iterationThroughStates}
@@ -597,8 +574,8 @@ function createAssignmentStructure(node) {
 
     historyOfTree.push(emptyAxiom + `\\UnaryInfC{$\\langle ${jsonToLatex(node)}, s_${iterationThroughStates}
         \\rangle \\rightarrow s_${iterationThroughStates + 1}$}\n`)
+    document.getElementById('switch-element').style.visibility = 'hidden';
   }
-
   let assignmentSingleIteration = `\\langle ${jsonToLatex(node)}, s_${iterationThroughStates}
         \\rangle \\rightarrow s_${iterationThroughStates + 1}`
   arrayOfIterationsInTree.push(assignmentSingleIteration);
@@ -606,33 +583,6 @@ function createAssignmentStructure(node) {
   assignmentRule(node);
   iterationThroughStates++;
 }
-
-const symbols = [
-  { display: '\\( \\rightarrow \\)', insert: '→' },
-  { display: '\\( \\langle \\)', insert: '⟨' },
-  { display: '\\( \\rangle \\)', insert: '⟩' },
-  { display: '\\( \\mathscr{B} \\)', insert: 'B' },
-  { display: '\\( \\left[\\!\\left[ \\right]\\!\\right] \\)', insert: '⟦?⟧' },
-  { display: '\\( \\textbf{tt} \\)', insert: 'tt' },
-  { display: '\\( \\textbf{ff} \\)', insert: 'ff' },
-  { display: '\\( s_? \\)', insert: 's_?' },
-  { display: '\\( := \\)', insert: ':=' },
-];
-
-
-function createKeyboard() {
-  const keyboardContainer = document.getElementById("math-keyboard");
-
-  symbols.forEach(symbol => {
-    const button = document.createElement("button");
-    button.className = "math-button";
-    button.innerHTML = symbol.display;
-    button.onclick = () => insertSymbol(symbol.insert);
-    keyboardContainer.appendChild(button);
-  });
-}
-
-createKeyboard();
 
 
 function deleteAllLatexElements(array) {
@@ -698,20 +648,19 @@ function createIfStructure(node) {
 
   if (historyOfTree.length !== 0) {
     let previousElementInTreeHistory = historyOfTree[historyOfTree.length - 1];
-
     const lastAxiomCIndex = previousElementInTreeHistory.indexOf('\\AxiomC{}');
 
     if (lastAxiomCIndex !== -1) {
       previousElementInTreeHistory = previousElementInTreeHistory.substring(0, lastAxiomCIndex) +
         `\\AxiomC{}\\AxiomC{}\\BinaryInfC{$\\langle ${jsonToLatex(node)}, s_${stateBeforeIfBody}
-      \\rangle \\rightarrow s_*$}\n` +
+      \\rangle \\rightarrow s_#$}\n` +
         previousElementInTreeHistory.substring(lastAxiomCIndex + '\\AxiomC{}'.length);
       historyOfTree.push(previousElementInTreeHistory);
     }
   }
 
   let ifSingleIteration = `\\langle ${jsonToLatex(node)}, s_${stateBeforeIfBody}
-      \\rangle \\rightarrow s_*\n`;
+      \\rangle \\rightarrow s_#\n`;
   arrayOfIterationsInTree.push(ifSingleIteration);
 
   let indexOfThisElement = arrayOfIterationsInTree.length - 1;
@@ -719,8 +668,6 @@ function createIfStructure(node) {
   createDerivationTree(
     wrappedStructure.body.length === 1 ? wrappedStructure.body[0] : wrappedStructure
   );
-
-
 
   if (historyOfTree.length !== 0) {
 
@@ -737,17 +684,15 @@ function createIfStructure(node) {
   }
 
   pairsOfStates.push(iterationThroughStates);
-
   arrayOfIterationsInTree[indexOfThisElement] = replaceStars(arrayOfIterationsInTree[indexOfThisElement], pairsOfStates);
 
-  let resultIfSingleIteration = `\\langle ${ifConditionResultToLatex(node.condition, isConditionTrue, stateBeforeIfBody)}`;
+  let resultIfSingleIteration = `${ifConditionResultToLatex(node.condition, isConditionTrue, stateBeforeIfBody)}`;
 
   arrayOfIterationsInTree.push(resultIfSingleIteration);
 
   latexCode += `\\AxiomC{$ ${ifConditionResultToLatex(node.condition, isConditionTrue, stateBeforeIfBody)}$}\n`;
   latexCode += `\\BinaryInfC{$\\langle ${jsonToLatex(node)}, s_${stateBeforeIfBody}
       \\rangle \\rightarrow s_${iterationThroughStates}$}\n`;
-
 }
 
 // *********** STATEMENTS ***********
@@ -767,134 +712,34 @@ function iterateThroughRules(node) {
 // *********** SKIP ***********
 
 function createSkipStructure() {
-  let skipStructure = "\\AxiomC{$\\langle\\texttt{skip}\\rangle$}\n";
+  if (isOnlyOneSkip === false) {
+    let skipStructure = `\\AxiomC{$\\langle\\texttt{skip}, s_${iterationThroughStates}\\rangle \\rightarrow s_${iterationThroughStates}$}\n`;
 
-  latexCode += skipStructure;
+    latexCode += skipStructure;
 
-  let previousElementInTreeHistory = historyOfTree[historyOfTree.length - 1];
-
-  let elementOfHistory = previousElementInTreeHistory.replace('\\AxiomC{}', skipStructure);
-
-  historyOfTree.push(elementOfHistory);
-}
-
-// ************************************
-//
-//            RUN PROGRAM
-//
-// ************************************
-const runButton = document.getElementById("visualizeButton");
-
-runButton.addEventListener("click", function () {
-  historyOfTree = [];
-  historyOfTree.push(emptyAxiom);
-
-  iterationThroughStates = 0;
-  let inputText = model.getValue();
-
-  if (inputText.trim() !== "") {
-    let chars = new antlr4.InputStream(inputText);
-    let lexer = new JaneLexer(chars);
-    let tokens = new antlr4.CommonTokenStream(lexer);
-    let parser = new JaneParser(tokens);
-    let tree = parser.program();
-
-    latexCode = '\\begin{prooftree}\n';
-    stackOfStates = [];
-
-    const visitor = new JaneVisitor();
-    const result = visitor.visit(tree);
-    const jsonResultString = JSON.stringify(result, null, 2);
-
-    countSemicolons = countSemicolonsJSON(result)
-    isOnlyOneAssignment = hasOnlyOneAssignment(result)
-
-    let s_0 = generateStatesHashMap();
-    stackOfStates.push(s_0);
-
-    createDerivationTree(result);
-
-    latexCode = latexCode + "\\end{prooftree}";
-
-    arrayOfIterationsInTree = deleteAllLatexElements(arrayOfIterationsInTree);
-
-
-    displayFinalStates();
-
-    setupInteractiveMode();
-
-
-    document.getElementById('outputResultArea').style.display = 'none';
-    document.getElementById('interactiveResultArea').style.display = 'block';
-    document.getElementById('interactive-buttons').style.display = 'block';
-
-    const interactiveResultArea = document.getElementById("interactiveResultArea");
-    if (1 < historyOfTree.length) {
-      historyOfTree[1] = replaceStars(historyOfTree[1], pairsOfStates)
+    if (historyOfTree.length !== 0) {
+      let previousElementInTreeHistory = historyOfTree[historyOfTree.length - 1];
+      let elementOfHistory = previousElementInTreeHistory.replace('\\AxiomC{}', skipStructure);
+      historyOfTree.push(elementOfHistory);
     }
-
-    if (1 < historyOfTree.length - 1) {
-      interactiveResultArea.innerHTML = "\\begin{prooftree}" + historyOfTree[1] + "\\end{prooftree}";
-    }
-
-    const outputDiv = document.getElementById('outputResultArea');
-
-    if (!outputDiv || !interactiveResultArea) {
-      console.error("One or both elements are not found in the DOM.");
-      return;
-    }
-
-    outputDiv.innerHTML = latexCode;
-
-    const mathkeyboard = document.getElementById('math-keyboard');
-
-    try {
-      MathJax.typesetPromise([outputDiv, interactiveResultArea, mathkeyboard]).then(() => {
-        const interactiveButtons = document.getElementById('interactive-buttons');
-        interactiveButtons.classList.add('visible');
-
-        const formBox = document.querySelector('.form-box');
-        if (formBox) {
-          formBox.classList.add('visible');
-        }
-
-        const leftButton = document.getElementById('left-click-button');
-        const rightButton = document.getElementById('right-click-button');
-
-        if (leftButton && rightButton) {
-          leftButton.classList.add('active');
-          rightButton.classList.remove('active');
-          updateSwitchPosition('left-click-button');
-
-          if (isDarkTheme()) {
-            leftButton.style.color = 'black';
-            rightButton.style.color = 'white';
-          } else {
-            leftButton.style.color = 'white';
-            rightButton.style.color = 'black';
-          }
-        }
-
-        updateStatesList();
-      });
-    } catch (err) {
-      console.error("MathJax error:", err);
-    }
-
   } else {
-    alert("Please enter some code to visualize.");
-  }
-});
+    latexCode += `\\AxiomC{}\n`;
+    latexCode += `\\UnaryInfC{$\\langle \\texttt{skip}, s_${iterationThroughStates}
+        \\rangle \\rightarrow s_${iterationThroughStates}$}\n`;
 
+    historyOfTree.push(emptyAxiom + `\\UnaryInfC{$\\langle \\texttt{skip}, s_${iterationThroughStates}
+        \\rangle \\rightarrow s_${iterationThroughStates}$}\n`)
+    document.getElementById('switch-element').style.visibility = 'hidden';
+  }
+}
 
 document.addEventListener("DOMContentLoaded", function () {
   initializeLanguage();
   setupLanguagePicker();
   leftClick();
 
-
   const toggleButton = document.getElementById('toggleStatesButton');
-
+  if (toggleButton) {
   toggleButton.addEventListener('click', function() {
     const panel = document.getElementById('statesPanel');
     const isActive = panel.classList.contains('active');
@@ -908,15 +753,14 @@ document.addEventListener("DOMContentLoaded", function () {
       updateStatesList();
     }
   });
+  }
 });
-
 
 function updateStatesList() {
   const statesList = document.getElementById('statesList');
   if (!statesList) return;
 
   statesList.innerHTML = '';
-
 
   const initialStateElement = document.createElement('div');
   initialStateElement.className = 'state-item';
@@ -947,8 +791,8 @@ function updateStatesList() {
 }
 
 const styleSheet = document.styleSheets[0];
-const stateItemStyles = `
-  .state-item {
+const stateItemStyles = [
+  `.state-item {
     background: #f8f9fa;
     border: 1px solid #4CAF50;
     border-radius: 8px;
@@ -956,32 +800,30 @@ const stateItemStyles = `
     margin: 15px 0;
     transition: all 0.3s ease;
     cursor: pointer;
-  }
-
-  .state-item:hover {
+  }`,
+  `.state-item:hover {
     transform: translateX(-5px);
     box-shadow: 2px 2px 8px rgba(76, 175, 80, 0.2);
-  }
-
-  html.dark-theme .state-item,
-  body.dark-theme .state-item {
-    background: #2a2d3e;
-    border-color: #9370DB;
-    color: #ffffff;
-  }
-
-  html.dark-theme .state-item:hover,
-  body.dark-theme .state-item:hover {
-    box-shadow: 2px 2px 8px rgba(147, 112, 219, 0.2);
-  }
-
-  .state-item .MathJax {
+  }`,
+  `html.dark-theme .state-item,
+   body.dark-theme .state-item {
+     background: #2a2d3e;
+     border-color: #9370DB;
+     color: #ffffff;
+  }`,
+  `html.dark-theme .state-item:hover,
+   body.dark-theme .state-item:hover {
+     box-shadow: 2px 2px 8px rgba(147, 112, 219, 0.2);
+  }`,
+  `.state-item .MathJax {
     font-size: 16px !important;
     margin: 0 !important;
-  }
-`;
+  }`
+];
 
-styleSheet.insertRule(stateItemStyles, styleSheet.cssRules.length);
+stateItemStyles.forEach(rule => {
+  styleSheet.insertRule(rule, styleSheet.cssRules.length);
+});
 
 document.getElementById('check-button').addEventListener('click', function() {
     const backButton = document.getElementById('backButton');
@@ -1003,43 +845,15 @@ document.getElementById('check-button').addEventListener('click', function() {
     }
 });
 
-function compareFinalStates() {
-    const backButton = document.getElementById('backButton');
-    const forwardButton = document.getElementById('forwardButton');
-    backButton.disabled = false;
-    backButton.style.opacity = '1';
-    forwardButton.disabled = false;
-    forwardButton.style.opacity = '1';
-
-    if (document.getElementById('left-click-button').classList.contains('active')) {
-        const guessNextState = document.getElementById('guessNextState');
-        const guessAllStatesButton = document.getElementById('guessAllStatesButton');
-
-        guessNextState.disabled = false;
-        guessNextState.style.opacity = '1';
-
-        if (currentIndex > 0) {
-            guessAllStatesButton.disabled = false;
-            guessAllStatesButton.style.opacity = '1';
-        }
-    }
-}
-
-
 document.getElementById('forwardButton').addEventListener('click', function() {
-  const guessAllStatesButton = document.getElementById('guessAllStatesButton');
-  if (guessAllStatesButton) {
-    if (currentIndex === 0) {
-      guessAllStatesButton.disabled = true;
-      guessAllStatesButton.style.opacity = '0.5';
-    } else {
-      guessAllStatesButton.disabled = false;
-      guessAllStatesButton.style.opacity = '1';
-    }
-  }
+  setupGuessAllStatesButton();
 });
 
 document.getElementById('backButton').addEventListener('click', function() {
+  setupGuessAllStatesButton();
+});
+
+function setupGuessAllStatesButton() {
   const guessAllStatesButton = document.getElementById('guessAllStatesButton');
   if (guessAllStatesButton) {
     if (currentIndex === 0) {
@@ -1050,8 +864,4 @@ document.getElementById('backButton').addEventListener('click', function() {
       guessAllStatesButton.style.opacity = '1';
     }
   }
-});
-
-
-
-
+}

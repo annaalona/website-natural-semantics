@@ -96,6 +96,9 @@ export const translations = {
     retryModalText: "Would you like to try again?",
     retryModalYes: "Yes",
     retryModalNo: "No",
+    incorrectAnswer: "Incorrect. Try again!",
+    cancelButton: "Cancel",
+    correctAnswer: "Correct answer!",
   },
   ukrainian: {
     mainTitle: "Натуральна операційна семантика",
@@ -194,6 +197,9 @@ export const translations = {
     retryModalText: "Чи хочете спробувати ще раз?",
     retryModalYes: "Так",
     retryModalNo: "Ні",
+    incorrectAnswer: "Неправильно. Спробуйте ще раз!",
+    cancelButton: "Скасувати",
+    correctAnswer: "Правильна відповідь!",
   },
   slovak: {
     mainTitle: "Prirodzená operačná sémantika",
@@ -292,6 +298,9 @@ export const translations = {
     retryModalText: "Chcete to skúsiť znova?",
     retryModalYes: "Áno",
     retryModalNo: "Nie",
+    incorrectAnswer: "Nesprávne. Skúste znova!",
+    cancelButton: "Zrušiť",
+    correctAnswer: "Správna odpoveď!",
   },
 };
 
@@ -499,6 +508,8 @@ function updateLanguage(language) {
     backButton: t.backButton,
     guessNextState: t.guessNextState,
     "check-button": t.checkButton,
+    "cancelGuessButton": t.cancelButton,
+    "cancelGuessAllStatesButton": t.cancelButton,
   };
 
   Object.entries(elements).forEach(([id, text]) => {
@@ -548,6 +559,27 @@ function updateLanguage(language) {
     if (yesButton) yesButton.textContent = t.retryModalYes;
     if (noButton) noButton.textContent = t.retryModalNo;
   }
+
+  const resultElement = document.getElementById("result");
+  if (resultElement && resultElement.innerHTML.includes("retryInlineBtn")) {
+    resultElement.innerHTML = `❌ ${t.incorrectAnswer} ` +
+      `<button id='retryInlineBtn' class='retry-inline-btn'>
+      </button>`;
+    resultElement.style.color = "red";
+    document.getElementById('retryInlineBtn').onclick = function() {
+      resultElement.innerText = '';
+    };
+  }
+
+  const guessFinalStates = document.getElementById('guessFinalStates');
+  if (guessFinalStates) {
+    const valueInputs = guessFinalStates.querySelectorAll('input.input-value, input[type="text"]');
+    valueInputs.forEach(input => {
+      if (input.placeholder !== undefined) {
+        input.placeholder = t.valuePlaceholder;
+      }
+    });
+  }
 }
 
 function updateSwitchPosition(activeButtonId) {
@@ -573,42 +605,29 @@ function updateSwitchPosition(activeButtonId) {
 
 function initializeLanguage() {
   const savedLanguage = localStorage.getItem("selectedLanguage") || "english";
-  const languageSelect = document.getElementById("language-picker-select");
+  const languageRadios = document.querySelectorAll('input[name="language"]');
 
-  if (languageSelect) {
-    languageSelect.value = savedLanguage;
-    updateLanguage(savedLanguage);
+  if (languageRadios) {
+    languageRadios.forEach(radio => {
+      if (radio.value === savedLanguage) {
+        radio.checked = true;
+      }
+      updateLanguage(savedLanguage);
+    });
   }
 }
 
 function setupLanguagePicker() {
-  const languageSelect = document.getElementById("language-picker-select");
-  if (languageSelect) {
-    languageSelect.addEventListener("change", function () {
-      updateLanguage(this.value);
+  const languageRadios = document.querySelectorAll('input[name="language"]');
+  if (languageRadios) {
+    languageRadios.forEach(radio => {
+      radio.addEventListener("change", function() {
+        if (this.checked) {
+          updateLanguage(this.value);
+        }
+      });
     });
   }
-}
-
-function setupHelpModalTabs() {
-  const tabButtons = document.querySelectorAll(".tab-button");
-  const tabContents = document.querySelectorAll(".tab-content");
-
-  tabButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      tabButtons.forEach((btn) => btn.classList.remove("active"));
-      tabContents.forEach((content) => content.classList.remove("active"));
-
-      button.classList.add("active");
-      const tabId = button.getAttribute("data-tab");
-      document.getElementById(`${tabId}-content`).classList.add("active");
-    });
-  });
-}
-
-function initializeHelpModal() {
-  setupHelpModalTabs();
-  initializeLanguage();
 }
 
 function initializeMode() {
@@ -665,4 +684,9 @@ function updateButtonVisibility() {
   document.getElementById('enterAllStates').style.display = 'none';
 }
 
-export { updateLanguage, initializeLanguage, setupLanguagePicker, initializeHelpModal };
+function getCurrentTranslations() {
+  const currentLang = localStorage.getItem("selectedLanguage") || "english";
+  return translations[currentLang];
+}
+
+export { updateLanguage, initializeLanguage, setupLanguagePicker, getCurrentTranslations };

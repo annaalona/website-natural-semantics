@@ -5,6 +5,13 @@ export function hasOnlyOneAssignment(jsonObj) {
   return false;
 }
 
+export function hasOnlyOneSkip(jsonObj) {
+  if (jsonObj.type === "statements" && Array.isArray(jsonObj.body)) {
+    return jsonObj.body.length === 1 && jsonObj.body[0].type === "skip";
+  }
+  return false;
+}
+
 export function wrapInStatements(json) {
   return {
     type: "statements",
