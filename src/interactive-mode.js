@@ -75,6 +75,7 @@ function hideElements() {
   const keyboard = document.getElementById('math-keyboard');
   const checkButton = document.getElementById('check-button');
   const resultElement = document.getElementById("result");
+  document.getElementById('cancelGuessButton').style.display = 'none';
 
   monacoSingleLine.style.visibility = 'hidden';
   keyboard.style.display = 'none';
