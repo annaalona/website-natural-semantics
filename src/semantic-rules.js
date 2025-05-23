@@ -141,8 +141,14 @@ export function generateStatesHashMap() {
     let keyInput = container.querySelector('input[id^="inpVar"]');
     let valueInput = container.querySelector('input[id^="inp"]:not([id^="inpVar"])');
 
-    if (keyInput && valueInput) {
-      hashMap.set(keyInput.value, parseInt(valueInput.value, 10));
+    if (
+      keyInput &&
+      valueInput &&
+      keyInput.value.trim() !== "" &&
+      valueInput.value.trim() !== "" &&
+      !isNaN(parseInt(valueInput.value, 10))
+    ) {
+      hashMap.set(keyInput.value.trim(), parseInt(valueInput.value, 10));
     }
   });
 

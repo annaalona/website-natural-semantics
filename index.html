@@ -44,9 +44,334 @@
   </script>
 
   <style>
-
     body:not(.loaded) {
       visibility: hidden;
+    }
+
+    .font-size-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin: 8px 0;
+      background: #f5f5f5;
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      width: fit-content;
+      margin-left: auto;
+      margin-right: 16px;
+    }
+
+    .font-size-radio {
+      display: none;
+    }
+
+    .font-size-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 45px;
+      height: 28px;
+      padding: 0 8px;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #333333;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 13px;
+      font-weight: 500;
+      user-select: none;
+      position: relative;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .font-size-radio:checked + .font-size-label {
+      background: #209434;
+      color: white;
+      border-color: #209434;
+      box-shadow: 0 2px 4px rgba(32, 148, 52, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .font-size-label:hover {
+      background: #f8f8f8;
+      border-color: #209434;
+      box-shadow: 0 2px 4px rgba(32, 148, 52, 0.1);
+    }
+
+    .font-size-label:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .dark-theme .font-size-controls {
+      background: #1e1e2f;
+      border-color: #2a2d3e;
+    }
+
+    .dark-theme .font-size-label {
+      background: #1e1e2f;
+      color: #d4d4d4;
+      border-color: #2a2d3e;
+    }
+
+    .dark-theme .font-size-radio:checked + .font-size-label {
+      background: #9370DB;
+      border-color: #9370DB;
+      box-shadow: 0 2px 4px rgba(147, 112, 219, 0.3);
+    }
+
+    .dark-theme .font-size-label:hover {
+      background: #2a2d3e;
+      border-color: #9370DB;
+      box-shadow: 0 2px 4px rgba(147, 112, 219, 0.2);
+    }
+
+    @media (max-width: 768px) {
+      .font-size-controls {
+        gap: 4px;
+        padding: 3px;
+      }
+
+      .font-size-label {
+        min-width: 40px;
+        height: 26px;
+        font-size: 12px;
+        padding: 0 6px;
+      }
+    }
+
+    .main-title-container {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 0 auto;
+      padding: 10px;
+      margin-bottom: 10px;
+      transition: background-color 0.3s ease;
+      background: transparent;
+    }
+
+    html.dark-theme .main-title-container,
+    body.dark-theme .main-title-container {
+      background: var(--background-color);
+    }
+
+    .main-title {
+      font-family: 'Fira Code', monospace;
+      font-size: 24px !important;
+      color: white;
+      background: #4CAF50;
+      display: block;
+      padding: 6px 12px 6px 50px;
+      margin: 6px auto;
+      border-radius: 8px;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      position: relative;
+      width: fit-content;
+      min-width: 120px;
+      max-width: calc(100% - 40px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+      margin-right: 16px;
+    }
+
+    .title-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .theme-container {
+      display: flex;
+      align-items: center;
+    }
+
+    .language-controls {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      background: transparent;
+      padding: 3px;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .language-radio {
+      display: none;
+    }
+
+    .language-label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 35px;
+      height: 22px;
+      padding: 0 6px;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #333333;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      font-size: 11px;
+      font-weight: 500;
+      user-select: none;
+      position: relative;
+      border: 1px solid #e0e0e0;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    .language-radio:checked + .language-label {
+      background: #209434;
+      color: white;
+      border-color: #209434;
+      box-shadow: 0 2px 4px rgba(32, 148, 52, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .language-label:hover {
+      background: #f8f8f8;
+      border-color: #209434;
+      box-shadow: 0 2px 4px rgba(32, 148, 52, 0.1);
+    }
+
+    .language-label:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    html.dark-theme .language-controls,
+    body.dark-theme .language-controls {
+      background: #1e1e2f;
+    }
+
+    .dark-theme .language-label {
+      background: #1e1e2f;
+      color: #d4d4d4;
+      border-color: #2a2d3e;
+    }
+
+    .dark-theme .language-radio:checked + .language-label {
+      background: #9370DB;
+      border-color: #9370DB;
+      box-shadow: 0 2px 4px rgba(147, 112, 219, 0.3);
+    }
+
+    .dark-theme .language-label:hover {
+      background: #2a2d3e;
+      border-color: #9370DB;
+      box-shadow: 0 2px 4px rgba(147, 112, 219, 0.2);
+    }
+
+    @media (max-width: 768px) {
+      .language-controls {
+        gap: 3px;
+        padding: 2px;
+      }
+
+      .language-label {
+        min-width: 32px;
+        height: 20px;
+        font-size: 10px;
+        padding: 0 4px;
+      }
+    }
+
+    .select-wrapper {
+      position: relative;
+    }
+
+    .select-wrapper select {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+      background: #ffffff;
+      color: #333333;
+      font-size: 14px;
+      cursor: pointer;
+      appearance: none;
+      padding-right: 30px;
+    }
+
+    .dark-theme .select-wrapper select {
+      background: #1e1e2f;
+      border-color: #2a2d3e;
+      color: #d4d4d4;
+    }
+
+    .select-wrapper::after {
+      content: '';
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 5px solid #333333;
+      pointer-events: none;
+    }
+
+    .dark-theme .select-wrapper::after {
+      border-top-color: #d4d4d4;
+    }
+
+    .switch {
+      width: 45px;
+      height: 24px;
+    }
+
+    .slider:before {
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(21px);
+    }
+
+    @media (max-width: 768px) {
+      .button-group-settings {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .button-group-left {
+        width: 100%;
+      }
+
+      .button-group-right {
+        width: 100%;
+        order: -1;
+        margin-bottom: 10px;
+      }
+
+      .button-subgroup {
+        display: flex !important;
+        width: 100%;
+        gap: 5px;
+      }
+
+      .button-subgroup .button {
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .variables-container {
+        width: 100%;
+      }
     }
   </style>
 
@@ -55,25 +380,27 @@
 
 <div class="main-title-container">
   <h1 class="main-title">Prirodzena operačna semantika</h1>
+  <div class="title-controls">
+    <div class="theme-container">
+      <label class="switch">
+        <input type="checkbox" id="theme-switcher">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="language-controls">
+      <input type="radio" name="language" id="langSK" class="language-radio" value="slovak">
+      <label for="langSK" class="language-label">SK</label>
+
+      <input type="radio" name="language" id="langEN" class="language-radio" value="english" checked>
+      <label for="langEN" class="language-label">EN</label>
+
+      <input type="radio" name="language" id="langUA" class="language-radio" value="ukrainian">
+      <label for="langUA" class="language-label">UA</label>
+    </div>
+  </div>
 </div>
 
 <div class="button-group-settings">
-  <div class="theme-container">
-    <label class="switch">
-      <input type="checkbox" id="theme-switcher">
-      <span class="slider"></span>
-    </label>
-  </div>
-  <div class="select-wrapper">
-  <select name="language-picker-select" id="language-picker-select">
-    <option lang="slovak" value="slovak">Slovenčina</option>
-    <option lang="english" value="english" selected >English</option>
-    <option lang="ukrainian" value="ukrainian">Українська</option>
-  </select>
-  </div>
-</div>
-
-<div class="button-group-top">
   <div class="button-group-left">
     <div class="button-group-row">
       <button class="button" id="helpButton">Pomoc</button>
@@ -95,20 +422,23 @@
       <div class="variables-label">Set Variables</div>
       <div class="button-group-plus-minus">
         <button class="button" id="plusButton">+</button>
-        <button class="button" id="minusButton">-</button>
       </div>
     </div>
   </div>
 
   <div class="button-group-right">
-        <div class="button-subgroup">
-          <button class="button" id="exportButton">Export to SVG</button>
-          <button class="button" id="export-latex-button">Export to LaTeX</button>
+    <div class="button-subgroup">
+      <button class="button" id="exportButton">Export to SVG</button>
+      <button class="button" id="export-latex-button">Export to LaTeX</button>
 
 
       <div id="latexModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%);
   background:#fff; border:1px solid #ccc; padding:20px; z-index:1000; max-width:90%; max-height:80%; overflow:auto;">
         <h3>LaTeX Export</h3>
+            <pre id="latexPreamble" style="white-space:pre-wrap; color: black">\documentclass{article}
+\usepackage{bussproofs}
+\usepackage{amsmath}
+\usepackage{amssymb}</pre>
         <pre id="latexContent" style="white-space:pre-wrap; color: black"></pre>
         <button class="button" id="copy-latex">Copy</button>
          </div>
@@ -255,13 +585,30 @@ while (x > 0) {
   </div>
 </div>
 
+<div class="font-size-controls">
+  <input type="radio" name="fontSize" id="fontSize16" class="font-size-radio" value="16">
+  <label for="fontSize16" class="font-size-label">16px</label>
+
+  <input type="radio" name="fontSize" id="fontSize20" class="font-size-radio" value="20">
+  <label for="fontSize20" class="font-size-label">20px</label>
+
+  <input type="radio" name="fontSize" id="fontSize24" class="font-size-radio" value="24" checked>
+  <label for="fontSize24" class="font-size-label">24px</label>
+
+  <input type="radio" name="fontSize" id="fontSize28" class="font-size-radio" value="28">
+  <label for="fontSize28" class="font-size-label">28px</label>
+
+  <input type="radio" name="fontSize" id="fontSize32" class="font-size-radio" value="32">
+  <label for="fontSize32" class="font-size-label">32px</label>
+</div>
+
 <div class="text-area-container">
   <div id="monaco-editor-container">
     <div id="monaco-editor"></div>
   </div>
 </div>
 
-<div class="form-box">
+<div id="switch-element" class="form-box">
   <div class="button-box">
     <button type="button" class="toggle-btn active" id="left-click-button">Step by Step</button>
     <button type="button" class="toggle-btn" id="right-click-button">Whole Tree</button>
@@ -291,7 +638,8 @@ while (x > 0) {
       <div id="monaco-editor-single"></div>
     </div>
   </div>
-  <div id="result" style="margin-top: 10px;"></div>
+  <div id="result" style="margin-top: 10px;">
+  </div>
 </div>
 
 
@@ -313,16 +661,13 @@ while (x > 0) {
 
 <div id="states" style="display: none"></div>
 
-<div id="retryModal" class="modal">
-  <div class="modal-content">
-    <h3>Try Again?</h3>
-    <p>Your answer was incorrect. Would you like to try again?</p>
-    <div class="modal-buttons">
-      <button id="retryYes" class="modal-button yes-button">Yes</button>
-      <button id="retryNo" class="modal-button no-button">No</button>
-    </div>
-  </div>
-</div>
+<script type="module">
+  import { initializeMonacoEditor } from './src/monaco-editor.js';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initializeMonacoEditor();
+  });
+</script>
 
 <script>
   const themeSwitcher = document.getElementById('theme-switcher');
@@ -353,7 +698,6 @@ while (x > 0) {
       });
     }
   }
-
 </script>
 
 </body>

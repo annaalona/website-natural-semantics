@@ -3,8 +3,6 @@ import antlr4 from "antlr4";
 import JaneLexer from "../myAntlr/JaneLexer";
 import JaneParser from "../myAntlr/JaneParser";
 import { model } from "./index";
-import { arrayOfIterationsInTree } from './index';
-import { currentIndex } from './interactive-mode';
 
 let editor;
 export let editorSecond;
@@ -64,6 +62,7 @@ export function setupMonacoErrorSyntaxHighlighting() {
           }
         });
         parser.program();
+
         resolveButton.disabled = hasErrors;
       } catch (e) {
         alert("An error occurred while parsing: " + e.message);
@@ -71,7 +70,6 @@ export function setupMonacoErrorSyntaxHighlighting() {
     }
   });
 }
-
 
 export function insertSymbol(symbol) {
   if (!editorSecond) return;
@@ -167,12 +165,30 @@ export function initializeMonacoEditor() {
     const editorOptions = {
       value: '',
       language: 'jane-language',
-      fontSize: 18,
+      fontSize: parseInt(localStorage.getItem('editorFontSize')) || 24,
       renderLineHighlight: 'line'
     };
 
     monaco.languages.register({ id: 'jane-language' });
     editor = monaco.editor.create(document.getElementById('monaco-editor'), editorOptions);
+
+    const savedSize = parseInt(localStorage.getItem('editorFontSize')) || 24;
+    const radioButtons = document.querySelectorAll('input[name="fontSize"]');
+    radioButtons.forEach(radio => {
+      if (parseInt(radio.value) === savedSize) {
+        radio.checked = true;
+      }
+    });
+
+    radioButtons.forEach(radio => {
+      radio.addEventListener('change', () => {
+        if (radio.checked) {
+          const newSize = parseInt(radio.value);
+          editor.updateOptions({ fontSize: newSize });
+          localStorage.setItem('editorFontSize', newSize);
+        }
+      });
+    });
 
     monaco.editor.defineTheme('myCustomTheme', {
       base: 'vs',
