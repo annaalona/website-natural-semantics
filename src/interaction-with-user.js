@@ -359,7 +359,6 @@ function compareFinalStates() {
       if (enterAllStatesButton) {
         enterAllStatesButton.style.display = 'none';
       }
-      document.getElementById('cancelGuessAllStatesButton').style.display = 'none';
     }, 5000);
   } else {
     const retryModal = document.getElementById('retryModal');
@@ -436,6 +435,53 @@ function analyzeStateForGuessing(iteration) {
 
   return null;
 }
+
+// function checkInput() {
+//   if (!editorSecond || currentIndex >= arrayOfIterationsInTree.length) return;
+//
+//   const currentIteration = arrayOfIterationsInTree[currentIndex-1];
+//
+//   const stateToGuess = analyzeStateForGuessing(currentIteration);
+//   if (!stateToGuess) return;
+//
+//   const symbolMap = {
+//     "→": "\\rightarrow",
+//     "⟨": "\\langle",
+//     "⟩": "\\rangle",
+//     "B": "\\mathscr{B}",
+//     "⟦": "[[",
+//     "⟧": "]]",
+//     "s_?": "s_?"
+//   };
+//
+//   function convertToLatex(input) {
+//     return input.replace(/\s+/g, '').replace(/→|⟨|⟩|⟦\?\⟧|tt|ff|s_\?|B/g, match => symbolMap[match] || match);
+//   }
+//
+//   let userInput = convertToLatex(editorSecond.getValue());
+//   const resultElement = document.getElementById("result");
+//
+//   const stateNumber = stateToGuess.match(/s_(\d+)/);
+//   const stateMap = stackOfStates[stateNumber];
+//
+//   let expectedState = '';
+//   if (stateMap) {
+//     expectedState = Array.from(stateMap.entries())
+//       .map(([key, value]) => `${key}=${value}`)
+//       .join(',');
+//   }
+//
+//
+//   if (userInput === expectedState) {
+//     resultElement.innerHTML = `✅ ${getCurrentTranslations().correctAnswer}`;
+//     resultElement.style.color = "green";
+//     currentIndex++;
+//     document.getElementById('forwardButton').click();
+//   } else {
+//     resultElement.innerText = "❌ Incorrect. Try again!";
+//     resultElement.style.color = "red";
+//   }
+// }
 
 export function setupPlusMinusInputButtons() {
   const plusButton = document.getElementById("plusButton");
@@ -661,7 +707,25 @@ function hideInteractiveElements() {
   }
 }
 
-
+// function createInputContainer() {
+//   const container = document.createElement('div');
+//   container.className = 'input-container';
+//
+//   const varNameInput = document.createElement('input');
+//   varNameInput.type = 'text';
+//   varNameInput.className = 'input-var';
+//   varNameInput.placeholder = translations[localStorage.getItem("selectedLanguage") || "english"].variableNamePlaceholder;
+//
+//   const varValueInput = document.createElement('input');
+//   varValueInput.type = 'text';
+//   varValueInput.className = 'input-value';
+//   varValueInput.placeholder = translations[localStorage.getItem("selectedLanguage") || "english"].valuePlaceholder;
+//
+//   container.appendChild(varNameInput);
+//   container.appendChild(varValueInput);
+//
+//   return container;
+// }
 
 const guessAllStatesButton = document.getElementById('guessAllStatesButton');
 if (guessAllStatesButton) {

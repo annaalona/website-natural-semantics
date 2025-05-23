@@ -841,6 +841,7 @@ document.getElementById('check-button').addEventListener('click', function() {
             guessAllStatesButton.disabled = false;
             guessAllStatesButton.style.opacity = '1';
         }
+        forwardButton.click();
     }
 });
 
