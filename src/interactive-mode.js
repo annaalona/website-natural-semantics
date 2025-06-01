@@ -76,7 +76,6 @@ function hideElements() {
   const checkButton = document.getElementById('check-button');
   const resultElement = document.getElementById("result");
   document.getElementById('cancelGuessButton').style.display = 'none';
-
   monacoSingleLine.style.visibility = 'hidden';
   keyboard.style.display = 'none';
   keyboard.classList.remove('visible');
@@ -85,6 +84,38 @@ function hideElements() {
   resultElement.innerText = '';
 }
 
+
+// document.getElementById('guessNextState').addEventListener('click', function() {
+//     const monacoSingleLine = document.getElementById('monaco-editor-container-single');
+//     monacoSingleLine.style.visibility = 'visible';
+//     const keyboard = document.getElementById('math-keyboard');
+//     keyboard.classList.add('visible');
+//     keyboard.style.display = 'flex';
+//
+//
+//     const checkButton = document.getElementById('check-button');
+//     checkButton.style.display = 'inline-flex';
+//     checkButton.classList.add('visible');
+//
+//
+//     if (editorSecond) {
+//         editorSecond.setValue('');
+//     }
+//
+//
+//     isGuessing = true;
+//     const guessAllStatesButton = document.getElementById('guessAllStatesButton');
+//     guessAllStatesButton.disabled = true;
+//     guessAllStatesButton.style.opacity = '0.5';
+//
+//
+//     const backButton = document.getElementById('backButton');
+//     const forwardButton = document.getElementById('forwardButton');
+//     backButton.disabled = true;
+//     backButton.style.opacity = '0.5';
+//     forwardButton.disabled = true;
+//     forwardButton.style.opacity = '0.5';
+// });
 
 
 document.getElementById('check-button').addEventListener('click', function() {
