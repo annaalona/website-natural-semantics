@@ -359,6 +359,7 @@ function compareFinalStates() {
       if (enterAllStatesButton) {
         enterAllStatesButton.style.display = 'none';
       }
+       document.getElementById('cancelGuessAllStatesButton').style.display = 'none';
     }, 5000);
   } else {
     const retryModal = document.getElementById('retryModal');
